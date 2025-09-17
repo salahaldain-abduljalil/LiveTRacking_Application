@@ -1,75 +1,248 @@
-import { Image } from 'expo-image';
-import { Platform, StyleSheet } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity, Alert} from 'react-native';
+import { Picker } from '@react-native-picker/picker';
+import { Ionicons } from '@expo/vector-icons';
+import { Dimensions } from 'react-native';
 
-import { HelloWave } from '@/components/HelloWave';
-import ParallaxScrollView from '@/components/ParallaxScrollView';
-import { ThemedText } from '@/components/ThemedText';
-import { ThemedView } from '@/components/ThemedView';
+const { width } = Dimensions.get('window');
 
-export default function HomeScreen() {
-  return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: '#A1CEDC', dark: '#1D3D47' }}
-      headerImage={
-        <Image
-          source={require('@/assets/images/partial-react-logo.png')}
-          style={styles.reactLogo}
-        />
-      }>
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">Welcome!</ThemedText>
-        <HelloWave />
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 1: Try it</ThemedText>
-        <ThemedText>
-          Edit <ThemedText type="defaultSemiBold">app/(tabs)/index.tsx</ThemedText> to see changes.
-          Press{' '}
-          <ThemedText type="defaultSemiBold">
-            {Platform.select({
-              ios: 'cmd + d',
-              android: 'cmd + m',
-              web: 'F12',
-            })}
-          </ThemedText>{' '}
-          to open developer tools.
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 2: Explore</ThemedText>
-        <ThemedText>
-          {`Tap the Explore tab to learn more about what's included in this starter app.`}
-        </ThemedText>
-      </ThemedView>
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Step 3: Get a fresh start</ThemedText>
-        <ThemedText>
-          {`When you're ready, run `}
-          <ThemedText type="defaultSemiBold">npm run reset-project</ThemedText> to get a fresh{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> directory. This will move the current{' '}
-          <ThemedText type="defaultSemiBold">app</ThemedText> to{' '}
-          <ThemedText type="defaultSemiBold">app-example</ThemedText>.
-        </ThemedText>
-      </ThemedView>
-    </ParallaxScrollView>
-  );
-}
+
+const NajedApp = () => {
+  const [currentStatus, setCurrentStatus] = useState('ready');
+  const [destination, setDestination] = useState('');
+  const [waitingTime, setWaitingTime] = useState(0);
+  const [isActive, setIsActive] = useState(false);
+  const [showNotification, setShowNotification] = useState(false);
+  
+
+  useEffect(() => {
+   let interval: number | null = null;
+
+    if (currentStatus === 'waiting' && waitingTime > 0) {
+      interval = setInterval(() => {
+        setWaitingTime(prev => {
+          if (prev <= 1) {
+            setCurrentStatus('clear');
+            setShowNotification(true);
+            setTimeout(() => setShowNotification(false), 3000);
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+    }
+    if(interval){
+    return () => clearInterval(interval);
+    }
+  }, [currentStatus, waitingTime]);
+
+  const handleStart = () => {
+    if (!destination) {
+      Alert.alert('يرجى تحديد الوجهة أولاً');
+      return;
+    }
+    const isRoadBusy = Math.random() > 0.4;
+    if (isRoadBusy) {
+      setCurrentStatus('waiting');
+      setWaitingTime(Math.floor(Math.random() * 360) + 120);
+    } else {
+      setCurrentStatus('clear');
+      setShowNotification(true);
+      setTimeout(() => setShowNotification(false), 3000);
+    }
+    setIsActive(true);
+  };
+
+  const resetApp = () => {
+    setCurrentStatus('ready');
+    setDestination('');
+    setWaitingTime(0);
+    setIsActive(false);
+    setShowNotification(false);
+  };
+
+  const formatTime = (seconds: number) => {
+  const mins = Math.floor(seconds / 60);
+  const secs = seconds % 60;
+  return `${mins}:${secs.toString().padStart(2, '0')}`;
+};
+
+
+
+  const destinations = [
+    'شمال الرياض - حي النرجس',
+    'جنوب الرياض - حي الملقا',
+    'شرق الرياض - حي الريان',
+    'غرب الرياض - حي الشفا',
+    'وسط الرياض - حي العليا',
+    'طريق الملك فهد',
+    'طريق خريص',
+    'الدائري الشرقي',
+    'الدائري الغربي'
+  ];
+
+  const getStatusColor = () => {
+    switch (currentStatus) {
+      case 'clear':
+        return '#34C759';
+      case 'waiting':
+        return '#FF3B30';
+      default:
+        return '#C7C7CC';
+    }
+  };
+
+  const getStatusText = () => {
+    switch (currentStatus) {
+      case 'clear':
+        return { title: 'العبور متاح الآن!', desc: 'يمكنك الانطلاق إلى الطريق الرئيسي' };
+      case 'waiting':
+        return { title: 'الطريق مزدحم', desc: 'يرجى الانتظار لضمان عبور سلس' };
+      default:
+        return { title: 'جاهز للانطلاق', desc: 'حدد وجهتك وابدأ رحلتك' };
+    }
+  };
 
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: 'row',
+  destinationContainer: {
+    marginVertical: 20,
+  },
+  destinationLabel: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  destinationPicker: {
+    width: '100%',
+    height: 40,
+  },
+
+    container: {
+    flex: 1,
+    padding: 20,
+    backgroundColor: '#dbe4e9ff',
+  },
+    header: {
+    marginBottom: 20,
+  },
+  title: {
+    fontSize: 24,
+    fontWeight: 'bold',
+  },
+  subtitle: {
+    fontSize: 18,
+    color: '#666',
+  },
+  statusContainer: {
     alignItems: 'center',
-    gap: 8,
+    marginBottom: 20,
   },
-  stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+  statusCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 10,
   },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: 'absolute',
+  statusTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
   },
+  statusDesc: {
+    fontSize: 16,
+    color: '#666',
+  },
+  actionButton: {
+    backgroundColor: '#007AFF',
+    padding: 15,
+    borderRadius: 10,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
+
+  },
+    resetButton: {
+    backgroundColor: '#FF3B30',
+    alignSelf: width > 700 ? 'center' : 'stretch',
+
+  },
+  actionButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  notification: {
+    backgroundColor: '#dff0d8',
+    padding: 10,
+    borderRadius: 5,
+    marginBottom: 20,
+  },
+  notificationText: {
+    fontSize: 16,
+    color: '#3e8e41',
+  },
+  waitingTime: {
+    fontSize: 24,
+    color: 'white',
+  },
+
+
+
 });
+
+
+  return (
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <Text style={styles.title}>ناجد</Text>
+        <Text style={styles.subtitle}>إدارة المرور الذكية</Text>
+      </View>
+
+      {showNotification && (
+        <View style={styles.notification}>
+          <Text style={styles.notificationText}>العبور متاح الآن!</Text>
+        </View>
+      )}
+
+      <View style={styles.statusContainer}>
+        <View style={[styles.statusCircle, { backgroundColor: getStatusColor() }]}>
+          {currentStatus === 'clear' && <Ionicons name="checkmark" size={40} color="white" />}
+          {currentStatus === 'waiting' && <Text style={styles.waitingTime}>{formatTime(waitingTime)}</Text>}
+          {currentStatus === 'ready' && <Ionicons name="car" size={40} color="white" />}
+        </View>
+        <Text style={styles.statusTitle}>{getStatusText().title}</Text>
+        <Text style={styles.statusDesc}>{getStatusText().desc}</Text>
+      </View>
+
+      {!isActive && (
+        <View style={styles.destinationContainer}>
+          <Text style={styles.destinationLabel}>حدد الوجهة</Text>
+          <Picker
+            selectedValue={destination}
+            style={styles.destinationPicker}
+            onValueChange={(itemValue) => setDestination(itemValue)}
+          >
+            <Picker.Item label="اختر وجهتك..." value="" />
+            {destinations.map((dest, idx) => (
+              <Picker.Item key={idx} label={dest} value={dest} />
+            ))}
+          </Picker>
+        </View>
+      )}
+
+      {!isActive ? (
+        <TouchableOpacity style={styles.actionButton} onPress={handleStart}>
+          <Text style={styles.actionButtonText}>بدء الرحلة</Text>
+        </TouchableOpacity>
+      ) : (
+        <TouchableOpacity style={[styles.actionButton, styles.resetButton]} onPress={resetApp}>
+          <Text style={styles.actionButtonText}>إنهاء الرحلة</Text>
+        </TouchableOpacity>
+      )}
+    </View>
+  );
+
+};
+
+  export default NajedApp;
